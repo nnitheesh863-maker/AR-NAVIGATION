@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Campus Navigation — 3D AR Simulator & Interactive Portal</title>
+  <title>Smart Campus Navigation — Architectural Blueprint Studio & AR Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app-container">
-    <!-- Sidebar / Navigation Panel -->
+    <!-- Sidebar / Control Panel -->
     <aside class="sidebar">
+      <!-- Brand Header -->
       <div class="brand">
         <div class="brand-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -20,8 +21,8 @@
           </svg>
         </div>
         <div>
-          <h2>CampusNav AR</h2>
-          <span class="badge">Smart University</span>
+          <h2>CampusNav Studio</h2>
+          <span class="badge">Architectural AR v2.4</span>
         </div>
       </div>
 
@@ -32,7 +33,7 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="destinationSearch" placeholder="Search classrooms, labs, library...">
+          <input type="text" id="destinationSearch" placeholder="Search rooms, labs, library, admin...">
         </div>
       </div>
 
@@ -47,11 +48,55 @@
         <button class="chip" data-category="STAIRCASE">Stairs & Lifts</button>
       </div>
 
+      <!-- Blueprint Import & Architectural Calibration Panel -->
+      <div class="blueprint-panel">
+        <div class="panel-header">
+          <h3>📐 Floor Blueprint Studio</h3>
+          <span class="status-tag live">CAD Enabled</span>
+        </div>
+        <p class="panel-desc">Import architectural floor plans, schematics, or CAD blueprints to map campus routes with precision.</p>
+        
+        <div class="blueprint-actions">
+          <input type="file" id="blueprintFileInput" accept="image/*,.svg" style="display: none;">
+          <button class="btn btn-outline" onclick="document.getElementById('blueprintFileInput').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Upload Blueprint
+          </button>
+          <button id="btnToggleDrawMode" class="btn btn-secondary">
+            ✏️ Node Editor
+          </button>
+        </div>
+
+        <!-- Preset Blueprint Schematics -->
+        <div class="preset-selector">
+          <label>Preset Architectural Blueprints:</label>
+          <select id="blueprintPresetSelect">
+            <option value="architectural_dark">🏛️ Engineering Block (Architectural Dark CAD)</option>
+            <option value="blueprint_cyan">📐 Technical Cyan Grid Blueprint</option>
+            <option value="none">Clear / Grid Only</option>
+          </select>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Blueprint Opacity</span>
+            <span id="opacityVal">75%</span>
+          </div>
+          <input type="range" id="blueprintOpacity" min="10" max="100" value="75">
+        </div>
+      </div>
+
       <!-- Route Planner Form -->
       <div class="route-panel">
-        <h3>Route Planner</h3>
+        <div class="panel-header">
+          <h3>Route Planner</h3>
+        </div>
         <div class="form-group">
-          <label>Start Point / Checkpoint</label>
+          <label>Start Checkpoint</label>
           <select id="startSelect"></select>
         </div>
         <div class="form-group">
@@ -63,7 +108,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
-            Calculate Route
+            Compute A* Route
           </button>
           <button id="btnSimulateWalk" class="btn btn-secondary" disabled>
             Simulate Walk
@@ -73,8 +118,10 @@
 
       <!-- QR Localization Simulator -->
       <div class="qr-panel">
-        <h3>QR Checkpoint Scanner</h3>
-        <p class="hint">Simulate scanning campus door/pillar QR tags to jump to coordinates.</p>
+        <div class="panel-header">
+          <h3>QR Checkpoint Positioning</h3>
+        </div>
+        <p class="hint">Simulate scanning pillar/door QR codes to seed indoor positioning.</p>
         <div class="qr-buttons" id="qrButtons"></div>
       </div>
 
@@ -96,18 +143,21 @@
       </div>
     </aside>
 
-    <!-- Main 3D / AR Interactive Canvas & HUD -->
+    <!-- Main Workspace -->
     <main class="main-content">
       <!-- Top HUD Header -->
       <header class="hud-header">
         <div class="hud-left">
           <div class="view-toggle-group">
-            <button id="btnViewMap" class="view-mode-btn active">🗺️ 3D Floor Map</button>
+            <button id="btnViewBlueprint" class="view-mode-btn active">📐 Blueprint CAD View</button>
             <button id="btnViewAR" class="view-mode-btn">📷 Live Camera AR</button>
           </div>
           <div class="hud-pill">
             <span class="dot live"></span>
-            <span id="arTrackingLabel">AR Tracking: <strong>Active</strong></span>
+            <span id="arTrackingLabel">Tracking: <strong>Blueprint Calibrated</strong></span>
+          </div>
+          <div class="hud-pill">
+            <span>Building: <strong>Main Academic Block</strong></span>
           </div>
           <div class="hud-pill">
             <span>Floor: <strong id="hudFloor">Floor 1 (CS Dept)</strong></span>
@@ -118,7 +168,7 @@
           <div class="hud-pill gps">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
-              <circle cx="12" cy="12" r="3"></circle>
+              <circle cx="12" cy="3"></circle>
             </svg>
             <span id="hudGps">GPS: 13.0827° N, 80.2707° E (±2m)</span>
           </div>
@@ -129,16 +179,24 @@
       <div class="maneuver-banner" id="maneuverBanner">
         <div class="maneuver-glyph" id="maneuverGlyph">OK</div>
         <div class="maneuver-details">
-          <div class="maneuver-text" id="maneuverText">Ready for Campus Navigation. Pick a destination or scan a QR code.</div>
-          <div class="maneuver-sub" id="maneuverSub">Multi-floor A* pathfinding active</div>
+          <div class="maneuver-text" id="maneuverText">Architectural Blueprint Loaded. Select Start and Destination.</div>
+          <div class="maneuver-sub" id="maneuverSub">Multi-floor A* pathfinding active over CAD schematic</div>
         </div>
       </div>
 
-      <!-- Interactive 3D Campus / Floor Plan Canvas -->
+      <!-- Interactive 3D Canvas / Blueprint / AR Container -->
       <div class="canvas-container" id="canvasContainer">
-        <!-- Live Video Element for Camera Stream -->
+        <!-- Live Video Element for Camera Stream in AR Mode -->
         <video id="arVideo" autoplay playsinline muted style="display: none;"></video>
         <canvas id="campusCanvas"></canvas>
+
+        <!-- Ruler and Coordinate Dimensions -->
+        <div class="ruler-top">
+          <span>0m</span><span>10m</span><span>20m</span><span>30m</span><span>40m</span><span>50m</span><span>60m</span>
+        </div>
+        <div class="ruler-left">
+          <span>0m</span><span>10m</span><span>20m</span><span>30m</span><span>40m</span>
+        </div>
 
         <!-- AR Mode HUD Crosshair & Distance Badge (Shown in AR Mode) -->
         <div class="ar-hud-overlay" id="arHudOverlay" style="display: none;">
@@ -166,20 +224,21 @@
           <button class="floor-btn" data-floor="0">GF</button>
         </div>
 
-        <!-- 3D Controls Legend -->
+        <!-- Blueprint Canvas Legend -->
         <div class="canvas-legend">
-          <div class="legend-item"><span class="legend-dot start"></span> Start Point</div>
-          <div class="legend-item"><span class="legend-dot path"></span> 3D Walkway</div>
-          <div class="legend-item"><span class="legend-dot dest"></span> Target Room</div>
-          <div class="legend-item"><span class="legend-dot qr"></span> QR Checkpoint</div>
+          <div class="legend-item"><span class="legend-dot start"></span> Start Checkpoint</div>
+          <div class="legend-item"><span class="legend-dot path"></span> 3D Walkway Path</div>
+          <div class="legend-item"><span class="legend-dot dest"></span> Destination</div>
+          <div class="legend-item"><span class="legend-dot qr"></span> QR Tag</div>
+          <div class="legend-item"><span class="legend-dot blueprint"></span> Blueprint Room</div>
         </div>
       </div>
 
       <!-- Bottom Directory List -->
       <section class="destination-directory">
         <div class="directory-header">
-          <h3>Campus Directory & Points of Interest (<span id="destCount">0</span>)</h3>
-          <span class="hint">Click any destination to set as navigation goal</span>
+          <h3>Campus Directory & Architectural Points of Interest (<span id="destCount">0</span>)</h3>
+          <span class="hint">Click any destination to calculate route</span>
         </div>
         <div class="destination-grid" id="destGrid"></div>
       </section>
