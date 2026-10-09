@@ -76,7 +76,7 @@ class ARCoreSessionLifecycleHelper(
 
     return try {
       // Request installation if necessary.
-      when (ArCoreApk.getInstance().requestInstall(activity, !installRequested)!!) {
+      when (ArCoreApk.getInstance().requestInstall(activity, !installRequested)) {
         ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
           installRequested = true
           // tryCreateSession will be called again, so we return null for now.
@@ -120,6 +120,7 @@ class ARCoreSessionLifecycleHelper(
     session = null
   }
 
+  @Suppress("UNUSED_PARAMETER")
   fun onRequestPermissionsResult(
     requestCode: Int,
     permissions: Array<out String>,

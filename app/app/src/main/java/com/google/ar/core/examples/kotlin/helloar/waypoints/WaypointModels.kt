@@ -18,6 +18,16 @@ package com.google.ar.core.examples.kotlin.helloar.waypoints
 import java.util.UUID
 
 enum class WaypointType(val label: String) {
+  CLASSROOM("Classroom"),
+  LAB("Lab"),
+  OFFICE("Office"),
+  LIBRARY("Library"),
+  CANTEEN("Canteen"),
+  STAIRCASE("Stairs"),
+  ELEVATOR("Elevator"),
+  ENTRANCE("Entrance"),
+  CORRIDOR("Corridor"),
+  RESTROOM("Restroom"),
   DOOR("Door"),
   ROOM("Room"),
   HALLWAY("Hallway"),
@@ -25,7 +35,7 @@ enum class WaypointType(val label: String) {
 }
 
 /**
- * Named place in the apartment. Independent of which localization backend created the anchor.
+ * Named place in the campus / building. Independent of which localization backend created the anchor.
  *
  * [backendAnchorId] is Google cloud id today, RTAB landmark id tomorrow — never a Google type.
  */
@@ -35,6 +45,11 @@ data class Waypoint(
   val type: WaypointType,
   val backendAnchorId: String? = null,
   val floor: Int = 0,
+  val buildingId: String = "main_block",
+  val localX: Float = 0f,
+  val localY: Float = 0f,
+  val localZ: Float = 0f,
+  val qrCodePayload: String? = null,
   val metadata: Map<String, String> = emptyMap(),
 ) {
   val isLocalizedAcrossSessions: Boolean

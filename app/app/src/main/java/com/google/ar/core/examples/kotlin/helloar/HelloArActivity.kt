@@ -104,6 +104,19 @@ class HelloArActivity : ComponentActivity() {
   lateinit var graphRepository: GraphRepository
   val liveAnchors = LiveAnchorRegistry()
 
+  val campusCatalogue = com.google.ar.core.examples.kotlin.helloar.campus.CampusCatalogueRepository()
+  lateinit var voiceManager: com.google.ar.core.examples.kotlin.helloar.campus.CampusVoiceManager
+  lateinit var gpsHelper: com.google.ar.core.examples.kotlin.helloar.campus.OutdoorGpsHelper
+  lateinit var qrScanner: com.google.ar.core.examples.kotlin.helloar.campus.QrCheckpointScanner
+
+  var outdoorGpsState by mutableStateOf<com.google.ar.core.examples.kotlin.helloar.campus.GpsCoordinate?>(null)
+  var isVoiceMuted by mutableStateOf(false)
+  var voiceLanguage by mutableStateOf("en")
+    private set
+  var lastQrStatusMessage by mutableStateOf("")
+  var activeBuildingId by mutableStateOf("main_academic")
+  var activeFloorNumber by mutableIntStateOf(0)
+
   var waypointRevision by mutableIntStateOf(0)
     private set
 
@@ -206,6 +219,13 @@ class HelloArActivity : ComponentActivity() {
     localizationBackend = BackendFactory.create(appSettings)
     waypointRepository = WaypointRepository(this)
     graphRepository = GraphRepository(this)
+    voiceManager = com.google.ar.core.examples.kotlin.helloar.campus.CampusVoiceManager(this)
+    qrScanner = com.google.ar.core.examples.kotlin.helloar.campus.QrCheckpointScanner(campusCatalogue)
+    gpsHelper = com.google.ar.core.examples.kotlin.helloar.campus.OutdoorGpsHelper(this) { gps ->
+      outdoorGpsState = gps
+    }
+    gpsHelper.start()
+
     waypointRepository.loadFromDisk()
     graphRepository.load()
 
@@ -940,6 +960,80 @@ class HelloArActivity : ComponentActivity() {
       }
       finish()
     }
+  }
+
+  fun toggleVoiceMute() {
+    isVoiceMuted = !isVoiceMuted
+    voiceManager.isMuted = isVoiceMuted
+    val status = if (isVoiceMuted) "Voice guidance muted" else "Voice guidance active"
+    Toast.makeText(this, status, Toast.LENGTH_SHORT).show()
+  }
+
+  fun updateVoiceLanguage(lang: String) {
+    voiceLanguage = lang
+    voiceManager.setLanguage(lang)
+    val langLabel = if (lang.startsWith("ta")) "Tamil (தமிழ்)" else "English"
+    Toast.makeText(this, "Language: $langLabel", Toast.LENGTH_SHORT).show()
+  }
+
+  fun handleQrScanPayload(payload: String) {
+    when (val result = qrScanner.processScan(payload)) {
+      is com.google.ar.core.examples.kotlin.helloar.campus.QrCheckpointScanner.ScanResult.Success -> {
+        lastQrStatusMessage = "Localized at: ${result.checkpoint.name} (${result.checkpoint.buildingId}, Floor ${result.checkpoint.floorNumber})"
+        activeBuildingId = result.checkpoint.buildingId
+        activeFloorNumber = result.checkpoint.floorNumber
+        voiceManager.speak("Localized at ${result.checkpoint.name}")
+        Toast.makeText(this, lastQrStatusMessage, Toast.LENGTH_LONG).show()
+
+        // If this checkpoint has an associated waypoint, auto-select it as start or destination
+        val matchingWp = waypointRepository.waypoints.firstOrNull {
+          it.qrCodePayload.equals(result.checkpoint.payload, ignoreCase = true) ||
+          it.name.contains(result.checkpoint.name, ignoreCase = true)
+        }
+        if (matchingWp != null) {
+          selectStart(matchingWp.id)
+        }
+      }
+      is com.google.ar.core.examples.kotlin.helloar.campus.QrCheckpointScanner.ScanResult.UnknownCheckpoint -> {
+        lastQrStatusMessage = "Unrecognized campus QR code: $payload"
+        Toast.makeText(this, lastQrStatusMessage, Toast.LENGTH_LONG).show()
+      }
+      is com.google.ar.core.examples.kotlin.helloar.campus.QrCheckpointScanner.ScanResult.InvalidPayload -> {
+        lastQrStatusMessage = "Invalid QR code payload"
+        Toast.makeText(this, lastQrStatusMessage, Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
+  fun selectCampusDestination(destination: com.google.ar.core.examples.kotlin.helloar.campus.CampusDestination) {
+    activeBuildingId = destination.buildingId
+    activeFloorNumber = destination.floorNumber
+    voiceManager.speak("Navigating to ${destination.name}")
+
+    // Match with registered waypoints if any exist
+    val matchingWp = waypointRepository.waypoints.firstOrNull {
+      it.name.contains(destination.name, ignoreCase = true) ||
+      it.name.contains(destination.roomNumber, ignoreCase = true) ||
+      (destination.waypointId != null && it.id == destination.waypointId)
+    }
+
+    if (matchingWp != null) {
+      selectDestination(matchingWp.id)
+      updateAppMode(AppMode.NAVIGATE)
+    } else {
+      // Add or plan towards destination
+      Toast.makeText(
+        this,
+        "Selected: ${destination.name} (${destination.roomNumber}). Mark or select start point to route.",
+        Toast.LENGTH_LONG,
+      ).show()
+    }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    gpsHelper.stop()
+    voiceManager.shutdown()
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {

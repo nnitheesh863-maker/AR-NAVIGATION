@@ -355,9 +355,17 @@ class HelloArRenderer(val activity: HelloArActivity) :
 
   private fun markerColorFor(type: WaypointType): FloatArray =
     when (type) {
+      WaypointType.CLASSROOM -> floatArrayOf(0.15f, 0.65f, 1.0f, 1.0f) // Bright Blue
+      WaypointType.LAB -> floatArrayOf(0.95f, 0.4f, 0.1f, 1.0f)        // Orange
+      WaypointType.OFFICE -> floatArrayOf(0.6f, 0.3f, 0.85f, 1.0f)     // Purple
+      WaypointType.LIBRARY -> floatArrayOf(0.1f, 0.75f, 0.6f, 1.0f)     // Teal
+      WaypointType.CANTEEN -> floatArrayOf(1.0f, 0.8f, 0.1f, 1.0f)     // Amber
+      WaypointType.STAIRCASE, WaypointType.ELEVATOR -> floatArrayOf(0.9f, 0.2f, 0.3f, 1.0f) // Coral/Red
+      WaypointType.ENTRANCE -> floatArrayOf(0.2f, 0.9f, 0.4f, 1.0f)    // Emerald
+      WaypointType.RESTROOM -> floatArrayOf(0.3f, 0.5f, 0.9f, 1.0f)    // Soft Blue
       WaypointType.DOOR -> floatArrayOf(0.2f, 0.55f, 1.0f, 1.0f)
       WaypointType.ROOM -> floatArrayOf(1.0f, 0.55f, 0.0f, 1.0f)
-      WaypointType.HALLWAY -> floatArrayOf(0.2f, 0.85f, 0.35f, 1.0f)
+      WaypointType.HALLWAY, WaypointType.CORRIDOR -> floatArrayOf(0.2f, 0.85f, 0.35f, 1.0f)
       WaypointType.OTHER -> floatArrayOf(1.0f, 0.95f, 0.2f, 1.0f)
     }
 

@@ -38,6 +38,11 @@ object WaypointPersistence {
           // Legacy key for older files / docs
           put("cloudAnchorId", wp.backendAnchorId ?: JSONObject.NULL)
           put("floor", wp.floor)
+          put("buildingId", wp.buildingId)
+          put("localX", wp.localX.toDouble())
+          put("localY", wp.localY.toDouble())
+          put("localZ", wp.localZ.toDouble())
+          put("qrCodePayload", wp.qrCodePayload ?: JSONObject.NULL)
           put(
             "metadata",
             JSONObject().also { meta ->
@@ -63,6 +68,7 @@ object WaypointPersistence {
             obj.optString("backendAnchorId", "").ifBlank {
               obj.optString("cloudAnchorId", "")
             }.ifBlank { null }
+          val qrPayload = obj.optString("qrCodePayload", "").ifBlank { null }
           val metaObj = obj.optJSONObject("metadata")
           val metadata = mutableMapOf<String, String>()
           if (metaObj != null) {
@@ -77,6 +83,11 @@ object WaypointPersistence {
                   .getOrDefault(WaypointType.OTHER),
               backendAnchorId = backendId,
               floor = obj.optInt("floor", 0),
+              buildingId = obj.optString("buildingId", "main_block"),
+              localX = obj.optDouble("localX", 0.0).toFloat(),
+              localY = obj.optDouble("localY", 0.0).toFloat(),
+              localZ = obj.optDouble("localZ", 0.0).toFloat(),
+              qrCodePayload = qrPayload,
               metadata = metadata,
             ),
           )

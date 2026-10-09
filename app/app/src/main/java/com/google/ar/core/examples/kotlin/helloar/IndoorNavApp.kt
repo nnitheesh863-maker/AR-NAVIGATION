@@ -101,8 +101,32 @@ private fun ArViewOverlay(activity: HelloArActivity) {
   var showClearConfirm by remember { mutableStateOf(false) }
   var showSavedList by remember { mutableStateOf(false) }
   var showConnections by remember { mutableStateOf(false) }
+  var showCampusDiscovery by remember { mutableStateOf(false) }
+  var showQrDialog by remember { mutableStateOf(false) }
   val waypoints = remember(revision) { activity.markersForUi() }
   val edges = remember(graphRevision, revision) { activity.edgesForUi() }
+
+  if (showCampusDiscovery) {
+    CampusDiscoveryDialog(
+      catalogue = activity.campusCatalogue,
+      onSelectDestination = { dest ->
+        showCampusDiscovery = false
+        activity.selectCampusDestination(dest)
+      },
+      onDismiss = { showCampusDiscovery = false },
+    )
+  }
+
+  if (showQrDialog) {
+    CampusQrDialog(
+      catalogue = activity.campusCatalogue,
+      onScanCode = { payload ->
+        showQrDialog = false
+        activity.handleQrScanPayload(payload)
+      },
+      onDismiss = { showQrDialog = false },
+    )
+  }
 
   if (pendingPose != null && appMode == AppMode.MAP) {
     AlertDialog(
@@ -116,10 +140,19 @@ private fun ArViewOverlay(activity: HelloArActivity) {
           label = {
             Text(
               when (pendingType) {
-                WaypointType.DOOR -> "e.g. Bathroom door"
-                WaypointType.ROOM -> "e.g. Kitchen"
-                WaypointType.HALLWAY -> "e.g. Living-dining"
-                WaypointType.OTHER -> "e.g. Entrance"
+                WaypointType.CLASSROOM -> "e.g. Room 101 / Lecture Hall"
+                WaypointType.LAB -> "e.g. CS Lab 1 / Physics Lab"
+                WaypointType.OFFICE -> "e.g. HOD Office / Dean Room"
+                WaypointType.LIBRARY -> "e.g. Central Library / Reading Room"
+                WaypointType.CANTEEN -> "e.g. Food Court / Coffee Shop"
+                WaypointType.STAIRCASE -> "e.g. Main Staircase (Floor 1)"
+                WaypointType.ELEVATOR -> "e.g. Passenger Lift A"
+                WaypointType.ENTRANCE -> "e.g. Main Gate / East Entrance"
+                WaypointType.RESTROOM -> "e.g. Restroom (Men/Women)"
+                WaypointType.CORRIDOR, WaypointType.HALLWAY -> "e.g. East Wing Corridor"
+                WaypointType.DOOR -> "e.g. Lab Entry Door"
+                WaypointType.ROOM -> "e.g. Seminar Room"
+                WaypointType.OTHER -> "e.g. Water Cooler / Notice Board"
               },
             )
           },
@@ -197,6 +230,7 @@ private fun ArViewOverlay(activity: HelloArActivity) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.spacedBy(6.dp),
+          verticalAlignment = Alignment.CenterVertically,
         ) {
           AppMode.entries.forEach { mode ->
             FilterChip(
@@ -213,6 +247,51 @@ private fun ArViewOverlay(activity: HelloArActivity) {
                 ),
             )
           }
+
+          TextButton(
+            onClick = { showCampusDiscovery = true },
+            modifier = Modifier.height(28.dp),
+            contentPadding = PaddingValues(horizontal = 6.dp),
+          ) {
+            Text("Campus Search", fontSize = 11.sp, color = Color(0xFF81D4FA))
+          }
+
+          TextButton(
+            onClick = { showQrDialog = true },
+            modifier = Modifier.height(28.dp),
+            contentPadding = PaddingValues(horizontal = 6.dp),
+          ) {
+            Text("Scan QR", fontSize = 11.sp, color = Color(0xFFA5D6A7))
+          }
+
+          TextButton(
+            onClick = { activity.toggleVoiceMute() },
+            modifier = Modifier.height(28.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp),
+          ) {
+            Text(if (activity.isVoiceMuted) "Voice: OFF" else "Voice: ON", fontSize = 10.sp, color = Color(0xFFFFCC80))
+          }
+
+          TextButton(
+            onClick = {
+              val nextLang = if (activity.voiceLanguage == "en") "ta" else "en"
+              activity.updateVoiceLanguage(nextLang)
+            },
+            modifier = Modifier.height(28.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp),
+          ) {
+            Text(if (activity.voiceLanguage == "ta") "தமிழ்" else "EN", fontSize = 10.sp, color = Color(0xFFCE93D8))
+          }
+        }
+
+        val gps = activity.outdoorGpsState
+        if (gps != null) {
+          Text(
+            "GPS: ${"%.4f".format(gps.latitude)}, ${"%.4f".format(gps.longitude)} (±${"%.0f".format(gps.accuracyMeters)}m)",
+            color = Color(0xFFB0BEC5),
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 10.sp,
+          )
         }
 
         if (appMode == AppMode.MAP) {
@@ -791,3 +870,180 @@ private fun NavigationManeuverBanner(
     Text(hint, color = Color.White, style = MaterialTheme.typography.labelLarge, fontSize = 13.sp)
   }
 }
+
+/** Searchable campus destination catalog sheet. */
+@Composable
+private fun CampusDiscoveryDialog(
+  catalogue: com.google.ar.core.examples.kotlin.helloar.campus.CampusCatalogueRepository,
+  onSelectDestination: (com.google.ar.core.examples.kotlin.helloar.campus.CampusDestination) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  var searchQuery by remember { mutableStateOf("") }
+  var selectedCategory by remember { mutableStateOf<com.google.ar.core.examples.kotlin.helloar.campus.DestinationCategory?>(null) }
+  val destinations = remember(searchQuery, selectedCategory) {
+    catalogue.searchDestinations(searchQuery, selectedCategory)
+  }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Campus Destination Directory", style = MaterialTheme.typography.titleLarge) },
+    text = {
+      Column(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
+        OutlinedTextField(
+          value = searchQuery,
+          onValueChange = { searchQuery = it },
+          placeholder = { Text("Search room, lab, library, office...") },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        )
+
+        LazyColumn(modifier = Modifier.weight(1f)) {
+          if (destinations.isEmpty()) {
+            item {
+              Text(
+                "No destinations match \"$searchQuery\"",
+                color = Color.Gray,
+                modifier = Modifier.padding(vertical = 16.dp),
+              )
+            }
+          } else {
+            items(destinations, key = { it.id }) { dest ->
+              Card(
+                modifier =
+                  Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .clickable { onSelectDestination(dest) },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF212121)),
+              ) {
+                Row(
+                  modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  Column(modifier = Modifier.weight(1f)) {
+                    Text(dest.name, color = Color.White, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                      "${dest.category.displayName} · Room ${dest.roomNumber} · Floor ${dest.floorNumber}",
+                      color = Color(0xFF81D4FA),
+                      style = MaterialTheme.typography.bodySmall,
+                    )
+                    if (dest.description.isNotBlank()) {
+                      Text(
+                        dest.description,
+                        color = Color.LightGray,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 11.sp,
+                      )
+                    }
+                  }
+                  Button(
+                    onClick = { onSelectDestination(dest) },
+                    modifier = Modifier.height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                  ) {
+                    Text("Go", fontSize = 12.sp)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Close")
+      }
+    },
+  )
+}
+
+/** QR Checkpoint positioning dialog. */
+@Composable
+private fun CampusQrDialog(
+  catalogue: com.google.ar.core.examples.kotlin.helloar.campus.CampusCatalogueRepository,
+  onScanCode: (String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  var manualCode by remember { mutableStateOf("") }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Campus QR Localization") },
+    text = {
+      Column(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
+        Text(
+          "Scan or select a known campus pillar/door QR code to instantly seed indoor positioning.",
+          style = MaterialTheme.typography.bodySmall,
+          color = Color.LightGray,
+          modifier = Modifier.padding(bottom = 8.dp),
+        )
+
+        OutlinedTextField(
+          value = manualCode,
+          onValueChange = { manualCode = it },
+          label = { Text("Enter QR Payload") },
+          placeholder = { Text("e.g. CAMPUS:MAIN:1:CSLAB1") },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (manualCode.isNotBlank()) {
+          Button(
+            onClick = { onScanCode(manualCode) },
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+          ) {
+            Text("Localize with Code")
+          }
+        }
+
+        Text(
+          "Available Campus Checkpoints:",
+          style = MaterialTheme.typography.titleSmall,
+          modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+        )
+
+        val destinationsWithQr = catalogue.getAllDestinations().filter { !it.qrCodePayload.isNullOrBlank() }
+        LazyColumn(modifier = Modifier.weight(1f)) {
+          items(destinationsWithQr, key = { it.id }) { dest ->
+            Card(
+              modifier =
+                Modifier
+                  .fillMaxWidth()
+                  .padding(vertical = 3.dp)
+                  .clickable { dest.qrCodePayload?.let { onScanCode(it) } },
+              colors = CardDefaults.cardColors(containerColor = Color(0xFF2C3437)),
+            ) {
+              Row(
+                modifier = Modifier.padding(8.dp).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+              ) {
+                Column(modifier = Modifier.weight(1f)) {
+                  Text(dest.name, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                  Text(
+                    "QR: ${dest.qrCodePayload} (Floor ${dest.floorNumber})",
+                    color = Color(0xFFA5D6A7),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 11.sp,
+                  )
+                }
+                TextButton(
+                  onClick = { dest.qrCodePayload?.let { onScanCode(it) } },
+                  modifier = Modifier.height(30.dp),
+                ) {
+                  Text("Localize", fontSize = 11.sp)
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Done")
+      }
+    },
+  )
+}
+

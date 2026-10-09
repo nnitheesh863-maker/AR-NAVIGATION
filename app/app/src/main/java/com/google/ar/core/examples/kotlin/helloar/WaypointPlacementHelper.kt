@@ -41,9 +41,11 @@ object WaypointPlacementHelper {
     if (hits.isEmpty()) return null
 
     return when (type) {
-      WaypointType.ROOM, WaypointType.HALLWAY -> pickHorizontalFloor(hits) ?: hits.first()
-      WaypointType.DOOR -> pickVerticalWall(hits) ?: hits.first()
-      WaypointType.OTHER -> hits.first()
+      WaypointType.ROOM, WaypointType.HALLWAY, WaypointType.CORRIDOR, WaypointType.CLASSROOM,
+      WaypointType.LAB, WaypointType.OFFICE, WaypointType.LIBRARY, WaypointType.CANTEEN,
+      WaypointType.RESTROOM -> pickHorizontalFloor(hits) ?: hits.first()
+      WaypointType.DOOR, WaypointType.ENTRANCE -> pickVerticalWall(hits) ?: hits.first()
+      WaypointType.STAIRCASE, WaypointType.ELEVATOR, WaypointType.OTHER -> hits.first()
     }
   }
 
@@ -77,9 +79,12 @@ object WaypointPlacementHelper {
   fun aimHint(type: WaypointType, canPlace: Boolean): String {
     if (!canPlace) {
       return when (type) {
-        WaypointType.ROOM -> "Aim crosshair at the floor in the center of the room."
-        WaypointType.HALLWAY -> "Aim crosshair at the hallway floor."
-        WaypointType.DOOR -> "Aim crosshair at the door frame or wall."
+        WaypointType.ROOM, WaypointType.CLASSROOM -> "Aim crosshair at the classroom/room floor."
+        WaypointType.LAB -> "Aim crosshair at the lab floor."
+        WaypointType.OFFICE, WaypointType.LIBRARY, WaypointType.CANTEEN, WaypointType.RESTROOM -> "Aim crosshair at the facility floor."
+        WaypointType.HALLWAY, WaypointType.CORRIDOR -> "Aim crosshair at the hallway floor."
+        WaypointType.DOOR, WaypointType.ENTRANCE -> "Aim crosshair at the door frame or wall."
+        WaypointType.STAIRCASE, WaypointType.ELEVATOR -> "Aim at the transition base or floor."
         WaypointType.OTHER -> "Aim crosshair at a floor or wall."
       }
     }
@@ -88,9 +93,12 @@ object WaypointPlacementHelper {
 
   fun hintForMiss(type: WaypointType): String =
     when (type) {
-      WaypointType.ROOM -> "Point the phone down at the room floor, wait for green crosshair, then Mark Spot."
-      WaypointType.HALLWAY -> "Point at the hallway floor, wait for green crosshair, then Mark Spot."
-      WaypointType.DOOR -> "Point at the door frame or wall, wait for green crosshair, then Mark Spot."
+      WaypointType.ROOM, WaypointType.CLASSROOM -> "Point the phone down at the floor, wait for green crosshair, then Mark Spot."
+      WaypointType.LAB, WaypointType.OFFICE, WaypointType.LIBRARY, WaypointType.CANTEEN, WaypointType.RESTROOM ->
+        "Point at the facility floor, wait for green crosshair, then Mark Spot."
+      WaypointType.HALLWAY, WaypointType.CORRIDOR -> "Point at the hallway floor, wait for green crosshair, then Mark Spot."
+      WaypointType.DOOR, WaypointType.ENTRANCE -> "Point at the door frame or wall, wait for green crosshair, then Mark Spot."
+      WaypointType.STAIRCASE, WaypointType.ELEVATOR -> "Point at the stair base / elevator entrance, then Mark Spot."
       WaypointType.OTHER -> "Aim at a floor or wall, wait for green crosshair, then Mark Spot."
     }
 

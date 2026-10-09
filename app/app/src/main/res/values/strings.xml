@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright 2026 Shahtab — Apache License 2.0 -->
 <resources>
-  <string translatable="false" name="app_name">Indoor Nav</string>
-  <string translatable="false" name="app_author">Shahtab</string>
-  <string translatable="false" name="searching_surfaces">Move your phone slowly to detect surfaces…</string>
+  <string translatable="false" name="app_name">CampusNav AR</string>
+  <string translatable="false" name="app_title">Smart Campus Navigation</string>
+  <string translatable="false" name="app_author">Campus Navigation System</string>
+  <string translatable="false" name="searching_surfaces">Move your phone slowly to detect campus walkable surfaces…</string>
+  <string translatable="false" name="scan_qr_prompt">Scan Campus QR Checkpoint</string>
+  <string translatable="false" name="destination_search_hint">Search classrooms, labs, departments, library…</string>
 </resources>
